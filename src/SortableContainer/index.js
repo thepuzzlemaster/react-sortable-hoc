@@ -1,20 +1,21 @@
+import invariant from 'invariant';
 import * as React from 'react';
 import {findDOMNode} from 'react-dom';
-import invariant from 'invariant';
-
+import AutoScroller from '../AutoScroller';
 import Manager from '../Manager';
 import {isSortableHandle} from '../SortableHandle';
-
 import {
   cloneNode,
   closest,
   events,
-  getScrollingParent,
   getContainerGridGap,
   getEdgeOffset,
   getElementMargin,
   getLockPixelOffsets,
   getPosition,
+  getScrollAdjustedBoundingClientRect,
+  getScrollingParent,
+  getTargetIndex,
   isTouchEvent,
   limit,
   NodeType,
@@ -23,17 +24,13 @@ import {
   setInlineStyles,
   setTransitionDuration,
   setTranslate3d,
-  getTargetIndex,
-  getScrollAdjustedBoundingClientRect,
 } from '../utils';
-
-import AutoScroller from '../AutoScroller';
 import {
+  defaultKeyCodes,
   defaultProps,
   omittedProps,
   propTypes,
   validateProps,
-  defaultKeyCodes,
 } from './props';
 
 export const SortableContext = React.createContext({
@@ -66,7 +63,7 @@ export default function sortableContainer(
     static displayName = provideDisplayName('sortableList', WrappedComponent);
     static defaultProps = defaultProps;
     static propTypes = propTypes;
-    
+
     componentDidMount() {
       const {useWindowAsScrollContainer} = this.props;
       const container = this.getContainer();
@@ -645,9 +642,9 @@ export default function sortableContainer(
 
         // For keyboard sorting, we want user input to dictate the position of the nodes
         const mustShiftBackward =
-          isKeySorting && (index > this.index && index <= prevIndex);
+          isKeySorting && index > this.index && index <= prevIndex;
         const mustShiftForward =
-          isKeySorting && (index < this.index && index >= prevIndex);
+          isKeySorting && index < this.index && index >= prevIndex;
 
         const translate = {
           x: 0,
