@@ -1,21 +1,21 @@
-import * as React from 'react';
-import PropTypes from 'prop-types';
-import {findDOMNode} from 'react-dom';
 import invariant from 'invariant';
-
+import * as React from 'react';
+import {findDOMNode} from 'react-dom';
+import AutoScroller from '../AutoScroller';
 import Manager from '../Manager';
 import {isSortableHandle} from '../SortableHandle';
-
 import {
   cloneNode,
   closest,
   events,
-  getScrollingParent,
   getContainerGridGap,
   getEdgeOffset,
   getElementMargin,
   getLockPixelOffsets,
   getPosition,
+  getScrollAdjustedBoundingClientRect,
+  getScrollingParent,
+  getTargetIndex,
   isTouchEvent,
   limit,
   NodeType,
@@ -24,18 +24,18 @@ import {
   setInlineStyles,
   setTransitionDuration,
   setTranslate3d,
-  getTargetIndex,
-  getScrollAdjustedBoundingClientRect,
 } from '../utils';
-
-import AutoScroller from '../AutoScroller';
 import {
+  defaultKeyCodes,
   defaultProps,
   omittedProps,
   propTypes,
   validateProps,
-  defaultKeyCodes,
 } from './props';
+
+export const SortableContext = React.createContext({
+  manager: {},
+});
 
 export default function sortableContainer(
   WrappedComponent,
@@ -44,10 +44,13 @@ export default function sortableContainer(
   return class WithSortableContainer extends React.Component {
     constructor(props) {
       super(props);
+      const manager = new Manager();
 
       validateProps(props);
 
-      this.manager = new Manager();
+      this.manager = manager;
+      this.wrappedInstance = React.createRef();
+      this.sortableContextValue = {manager};
       this.events = {
         end: this.handleEnd,
         move: this.handleMove,
@@ -60,15 +63,6 @@ export default function sortableContainer(
     static displayName = provideDisplayName('sortableList', WrappedComponent);
     static defaultProps = defaultProps;
     static propTypes = propTypes;
-    static childContextTypes = {
-      manager: PropTypes.object.isRequired,
-    };
-
-    getChildContext() {
-      return {
-        manager: this.manager,
-      };
-    }
 
     componentDidMount() {
       const {useWindowAsScrollContainer} = this.props;
@@ -648,9 +642,9 @@ export default function sortableContainer(
 
         // For keyboard sorting, we want user input to dictate the position of the nodes
         const mustShiftBackward =
-          isKeySorting && (index > this.index && index <= prevIndex);
+          isKeySorting && index > this.index && index <= prevIndex;
         const mustShiftForward =
-          isKeySorting && (index < this.index && index >= prevIndex);
+          isKeySorting && index < this.index && index >= prevIndex;
 
         const translate = {
           x: 0,
@@ -898,7 +892,7 @@ export default function sortableContainer(
         'To access the wrapped instance, you need to pass in {withRef: true} as the second argument of the SortableContainer() call',
       );
 
-      return this.refs.wrappedInstance;
+      return this.wrappedInstance.current;
     }
 
     getContainer() {
@@ -1047,9 +1041,13 @@ export default function sortableContainer(
     };
 
     render() {
-      const ref = config.withRef ? 'wrappedInstance' : null;
+      const ref = config.withRef ? this.wrappedInstance : null;
 
-      return <WrappedComponent ref={ref} {...omit(this.props, omittedProps)} />;
+      return (
+        <SortableContext.Provider value={this.sortableContextValue}>
+          <WrappedComponent ref={ref} {...omit(this.props, omittedProps)} />
+        </SortableContext.Provider>
+      );
     }
 
     get helperContainer() {
