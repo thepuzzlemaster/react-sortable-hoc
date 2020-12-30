@@ -1,6 +1,6 @@
 import invariant from 'invariant';
 import * as React from 'react';
-import {findDOMNode} from 'react-dom';
+import {ChildComponent} from '../SortableContainer/childContainer';
 import {provideDisplayName} from '../utils';
 
 export default function sortableHandle(
@@ -10,8 +10,10 @@ export default function sortableHandle(
   return class WithSortableHandle extends React.Component {
     static displayName = provideDisplayName('sortableHandle', WrappedComponent);
 
+    childRef = React.createRef(null);
+
     componentDidMount() {
-      const node = findDOMNode(this);
+      const node = this.childRef.current;
       node.sortableHandle = true;
     }
 
@@ -28,7 +30,11 @@ export default function sortableHandle(
     render() {
       const ref = config.withRef ? this.wrappedInstance : null;
 
-      return <WrappedComponent ref={ref} {...this.props} />;
+      return (
+        <ChildComponent ref={this.childRef}>
+          <WrappedComponent ref={ref} {...this.props} />
+        </ChildComponent>
+      );
     }
   };
 }

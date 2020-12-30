@@ -1,8 +1,8 @@
 import invariant from 'invariant';
 import PropTypes from 'prop-types';
 import * as React from 'react';
-import {findDOMNode} from 'react-dom';
 import {SortableContext} from '../SortableContainer';
+import {ChildComponent} from '../SortableContainer/childContainer';
 import {omit, provideDisplayName} from '../utils';
 
 const propTypes = {
@@ -31,6 +31,8 @@ export default function sortableElement(
       collection: 0,
     };
 
+    childRef = React.createRef(null);
+
     componentDidMount() {
       this.register();
     }
@@ -58,7 +60,7 @@ export default function sortableElement(
 
     register() {
       const {collection, disabled, index} = this.props;
-      const node = findDOMNode(this);
+      const node = this.childRef.current;
 
       node.sortableInfo = {
         collection,
@@ -88,7 +90,11 @@ export default function sortableElement(
     render() {
       const ref = config.withRef ? this.wrappedInstance : null;
 
-      return <WrappedComponent ref={ref} {...omit(this.props, omittedProps)} />;
+      return (
+        <ChildComponent ref={this.childRef}>
+          <WrappedComponent ref={ref} {...omit(this.props, omittedProps)} />
+        </ChildComponent>
+      );
     }
   };
 }
