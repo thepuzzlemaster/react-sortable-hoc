@@ -1,6 +1,5 @@
 import invariant from 'invariant';
 import * as React from 'react';
-import {findDOMNode} from 'react-dom';
 import AutoScroller from '../AutoScroller';
 import Manager from '../Manager';
 import {isSortableHandle} from '../SortableHandle';
@@ -25,6 +24,7 @@ import {
   setTransitionDuration,
   setTranslate3d,
 } from '../utils';
+import {ChildComponent} from './childContainer';
 import {
   defaultKeyCodes,
   defaultProps,
@@ -63,6 +63,8 @@ export default function sortableContainer(
     static displayName = provideDisplayName('sortableList', WrappedComponent);
     static defaultProps = defaultProps;
     static propTypes = propTypes;
+
+    childRef = React.createRef(null);
 
     componentDidMount() {
       const {useWindowAsScrollContainer} = this.props;
@@ -899,7 +901,7 @@ export default function sortableContainer(
       const {getContainer} = this.props;
 
       if (typeof getContainer !== 'function') {
-        return findDOMNode(this);
+        return this.childRef.current.firstElementChild;
       }
 
       return getContainer(
@@ -1045,7 +1047,9 @@ export default function sortableContainer(
 
       return (
         <SortableContext.Provider value={this.sortableContextValue}>
-          <WrappedComponent ref={ref} {...omit(this.props, omittedProps)} />
+          <ChildComponent ref={this.childRef}>
+            <WrappedComponent ref={ref} {...omit(this.props, omittedProps)} />
+          </ChildComponent>
         </SortableContext.Provider>
       );
     }
